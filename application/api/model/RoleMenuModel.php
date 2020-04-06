@@ -50,7 +50,7 @@ class RoleMenuModel extends Model
         update_time=now()
         ";
 
-        $res=Db::query($sql);
+        $res=Db::execute($sql);
 
         return $res;
     }

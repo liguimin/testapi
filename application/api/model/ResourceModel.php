@@ -27,7 +27,7 @@ class ResourceModel extends Model
         'API'   => 1,
         'ROUTE' => 2,
         'BTN'   => 3,
-        'FIELD' => 4
+        'FIELD' => 4,
     ];
 
 
@@ -38,7 +38,17 @@ class ResourceModel extends Model
         'POST'   => 2,
         'PUT'    => 3,
         'PATCH'  => 4,
-        'DELETE' => 5
+        'DELETE' => 5,
+    ];
+
+    //方法名称
+    const METHOD_NAMES = [
+        0 => 'NONE',
+        1 => 'GET',
+        2 => 'POST',
+        3 => 'PUT',
+        4 => 'PATCH',
+        5 => 'DELETE',
     ];
 
     //是否公共资源

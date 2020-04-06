@@ -66,7 +66,7 @@ class PermissionController extends Base
                 'depath'      => $p_info['depath'] + 1,
                 'is_node'     => $params['is_node'],
                 'sort_num'    => $params['sort_num'],
-                'create_time' => $now
+                'create_time' => $now,
             ]);
 
             if ($params['is_node'] == PermissionModel::NOT_NODE && !empty($params['checked_resources'])) {
@@ -74,12 +74,12 @@ class PermissionController extends Base
 
                 //添加关联记录
                 $m_permission_resource = new PermissionResourceModel();
-                $insert_resource       = [];
+                $insert_resource = [];
                 foreach ($params['checked_resources'] as $key => $val) {
                     $insert_resource[] = [
                         'permission_id' => $permission_last_id,
                         'resource_id'   => $val,
-                        'create_time'   => $now
+                        'create_time'   => $now,
                     ];
                 }
                 if (!empty($insert_resource)) {
@@ -119,15 +119,16 @@ class PermissionController extends Base
         $this->validateParams(new PermissionValidate(), 's_edit', ['id' => $id]);
 
         //获取节点树
-        $list      = PermissionModel::getNodeList();
+        $list = PermissionModel::getNodeList();
         $tree_node = Fuc::getTree($list, 0, 'pid', 'id', 'children', function ($val) {
             $curr_val = [];
             if (!empty($val)) {
                 $curr_val = [
                     'title'    => $val['name'],
+                    'label'    => $val['name'],
                     'value'    => $val['id'],
                     'key'      => $val['id'],
-                    'children' => $val['children']
+                    'children' => $val['children'],
                 ];
             }
             return $curr_val;
@@ -138,13 +139,14 @@ class PermissionController extends Base
 
         //获取当前已关联的资源
         $permission_resources = PermissionResourceModel::where('permission_id', $id)->where('is_del', 0)->field('resource_id')->select()->toArray();
-        $select_keys          = array_column($permission_resources, 'resource_id');
+        $select_keys = array_column($permission_resources, 'resource_id');
 
         //返回数据
         $this->jsonReturn([
             'treeNode'   => $tree_node,
             'info'       => $info,
-            'targetKeys' => empty($select_keys) ? [] : $select_keys
+            'list'       => $list,
+            'targetKeys' => empty($select_keys) ? [] : $select_keys,
         ]);
     }
 
@@ -169,10 +171,10 @@ class PermissionController extends Base
         if (empty($p_info)) throw new MsgException('上级信息不存在！');
 
         //查当前ID信息
-        $curr_data=$m_permission->where('id',$id)->find();
+        $curr_data = $m_permission->where('id', $id)->find();
 
         //检查选中的keys
-        $target_keys    = Fuc::getValue($params, 'checked_resources');
+        $target_keys = Fuc::getValue($params, 'checked_resources');
         $re_target_keys = Fuc::getValue($params, 're_checked_resources');
         if ($params['is_node'] == PermissionModel::NOT_NODE) {
             if (!is_array($target_keys)) throw new ValidateException('选中的key必须是一个数组！');
@@ -182,13 +184,13 @@ class PermissionController extends Base
         $now = Fuc::getNow();
         Db::startTrans();
         try {
-            $edit_data=[
+            $edit_data = [
                 'pid'         => $params['pid'],
                 'name'        => $params['name'],
                 'state'       => $params['state'],
                 'is_node'     => $params['is_node'],
                 'sort_num'    => $params['sort_num'],
-                'update_time' => $now
+                'update_time' => $now,
             ];
 
             //检查传入的上级ID是否和数据库一致
@@ -196,17 +198,16 @@ class PermissionController extends Base
                 $p_info = $m_permission->where('id', $params['pid'])->find();
                 if (empty($p_info)) throw new ValidateException('上级ID不存在！');
                 $edit_data['depath'] = $p_info['depath'] + 1;
-                $edit_data['path']   = $p_info['path'] . $params['pid'] . '>';
+                $edit_data['path'] = $p_info['path'] . $params['pid'] . '>';
 
                 //将其子菜单全部转移到新的父级ID下
                 $m_permission->where('path', 'like', '%>' . $id . '>%')->update([
                     'path'   => Db::raw("replace(path,'{$curr_data['path']}','{$edit_data['path']}')"),
-                    'depath' => Db::raw("(length(path)-length(replace(path,'>',''))-2)")
+                    'depath' => Db::raw("(length(path)-length(replace(path,'>',''))-2)"),
                 ]);
             }
             //修改权限信息
             $m_permission->where('id', $id)->update($edit_data);
-
 
 
             if ($params['is_node'] == PermissionModel::NOT_NODE) {
@@ -216,7 +217,7 @@ class PermissionController extends Base
                 if (!empty($del_keys)) {
                     $m_permission_resource->where('permission_id', $id)->where('resource_id', 'in', $del_keys)->update([
                         'is_del'   => 1,
-                        'del_time' => $now
+                        'del_time' => $now,
                     ]);
                 }
 
@@ -228,7 +229,7 @@ class PermissionController extends Base
                         $insert_resource[] = [
                             'permission_id' => $id,
                             'resource_id'   => $val,
-                            'create_time'   => $now
+                            'create_time'   => $now,
                         ];
                     }
                     if (!empty($insert_resource)) {
@@ -275,21 +276,23 @@ class PermissionController extends Base
      */
     public function getTreeNode()
     {
-        $list      = PermissionModel::getNodeList();
+        $list = PermissionModel::getNodeList();
         $tree_node = Fuc::getTree($list, 0, 'pid', 'id', 'children', function ($val) {
             $curr_val = [];
             if (!empty($val)) {
                 $curr_val = [
                     'title'    => $val['name'],
+                    'label'    => $val['name'],
                     'value'    => $val['id'],
                     'key'      => $val['id'],
-                    'children' => $val['children']
+                    'children' => $val['children'],
                 ];
             }
             return $curr_val;
         });
         $this->jsonReturn([
-            'tree_node' => $tree_node
+            'list'      => $list,
+            'tree_node' => $tree_node,
         ]);
     }
 
@@ -304,10 +307,10 @@ class PermissionController extends Base
         $role_ids = UserRoleModel::where('user_id', $userinfo['id'])->column('role_id');
 
         $m_permission = new PermissionModel();
-        $types        = ResourceModel::TYPE;
-        $resources    = $m_permission->getResourcesByRoleId($role_ids, [
+        $types = ResourceModel::TYPE;
+        $resources = $m_permission->getResourcesByRoleId($role_ids, [
             $types['ROUTE'],
-            $types['BTN']
+            $types['BTN'],
         ]);
 
         $route_resources = [];
@@ -325,10 +328,10 @@ class PermissionController extends Base
         }
 
         $this->jsonReturn([
-            'permissions'=>[
+            'permissions' => [
                 'routePermissions' => $route_resources,
-                'btnPermissions'   => $btn_resource
-            ]
+                'btnPermissions'   => $btn_resource,
+            ],
         ]);
     }
 }

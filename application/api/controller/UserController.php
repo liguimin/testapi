@@ -27,14 +27,14 @@ class UserController extends Base
      */
     public function index()
     {
-        $page      = input('page');
+        $page = input('page');
         $page_size = input('page_size');
-        $m_user    = new UserModel();
+        $m_user = new UserModel();
 
-        $username      = input('username', '');
-        $name          = input('name', '');
-        $birthday      = input('birthday', '');
-        $state         = input('state', '');
+        $username = input('username', '');
+        $name = input('name', '');
+        $birthday = input('birthday', '');
+        $state = input('state', '');
         $s_create_time = input('s_create_time', '');
         $e_create_time = input('e_create_time', '');
 
@@ -77,14 +77,14 @@ class UserController extends Base
 
         $index = Fuc::getOffset($page, $page_size);
         foreach ($data as $key => $val) {
-            $val['index']  = ++$index;
+            $val['index'] = ++$index;
             $val['avatar'] = request()->domain() . $val['avatar'];
             unset($data[$key]['pwd']);
         }
 
         $this->jsonReturn([
             'count' => $count,
-            'data'  => $data
+            'data'  => $data,
         ]);
     }
 
@@ -98,7 +98,7 @@ class UserController extends Base
     {
         $role_list = RoleModel::all();
         $this->jsonReturn([
-            'roleList' => $role_list
+            'roleList' => $role_list,
         ]);
     }
 
@@ -135,18 +135,18 @@ class UserController extends Base
                 'birthday'    => Fuc::getValue($params, 'birthday', ''),
                 'remarks'     => Fuc::getValue($params, 'remarks', ''),
                 'avatar'      => Fuc::getValue($params, 'avatar', ''),
-                'create_time' => Fuc::getNow()
+                'create_time' => Fuc::getNow(),
             ]);
             $last_user_id = $user->getLastInsID();
 
             //添加关联角色
-            $m_user_role         = new UserRoleModel();
+            $m_user_role = new UserRoleModel();
             $user_role_save_data = [];
             foreach ($params['checked_role'] as $val) {
                 $user_role_save_data[] = [
                     'user_id'     => $last_user_id,
                     'role_id'     => $val,
-                    'create_time' => Fuc::getNow()
+                    'create_time' => Fuc::getNow(),
                 ];
             }
             $m_user_role->insertAll($user_role_save_data);
@@ -173,15 +173,15 @@ class UserController extends Base
         $this->validateParams(new UserValidate(), 's_updState', $params);
 
         //修改状态
-        $user  = new UserModel();
+        $user = new UserModel();
         $state = $params['state'] == self::ENABLE_STATE ? self::DISABLED_STATE : self::ENABLE_STATE;
         $user->save([
-            'state' => $state
+            'state' => $state,
         ], ['id' => $params['id']]);
 
         //返回结果
         $this->jsonReturn([
-            'state' => $state
+            'state' => $state,
         ]);
     }
 
@@ -198,7 +198,7 @@ class UserController extends Base
         $data = UserModel::where('id', $id)->find();
         unset($data['pwd']);
         $data['preview_url'] = request()->domain() . $data['avatar'];
-        $data['birthday']    = empty($data['birthday']) ? null : $data['birthday'];
+        $data['birthday'] = empty($data['birthday']) ? null : $data['birthday'];
 
         //查询所有角色
         $role_list = RoleModel::all();
@@ -209,7 +209,7 @@ class UserController extends Base
         $this->jsonReturn([
             'data'        => $data,
             'roleList'    => $role_list,
-            'checkedRole' => $checked_role
+            'checkedRole' => $checked_role,
         ]);
     }
 
@@ -219,7 +219,7 @@ class UserController extends Base
      */
     public function update($id)
     {
-        $params       = request()->put();
+        $params = request()->put();
         $params['id'] = $id;
 
         //验证参数
@@ -229,36 +229,36 @@ class UserController extends Base
         if (empty($params['checked_role'])) throw new ValidateException('请选择角色！');
 
         Db::startTrans();
-        try{
+        try {
             $update_data = [
                 'name'        => $params['name'],
                 'mobile'      => $params['mobile'],
                 'state'       => $params['state'],
-                'birthday'    => $params['birthday'],
+                'birthday'    => $params['birthday']?$params['birthday']:'',
                 'remarks'     => $params['remarks'],
                 'avatar'      => $params['avatar'],
-                'update_time' => Fuc::getNow()
+                'update_time' => Fuc::getNow(),
             ];
 
             //修改信息
             UserModel::where('id', $id)->update($update_data);
 
             //找出删除的角色,如果不为空则删除
-            $m_user_role=new UserRoleModel();
-            $del_role=array_diff($params['re_checked_role'],$params['checked_role']);
-            if(!empty($del_role)){
-                $m_user_role->where('user_id',$id)->where('role_id','in',$del_role)->delete();
+            $m_user_role = new UserRoleModel();
+            $del_role = array_diff($params['re_checked_role'], $params['checked_role']);
+            if (!empty($del_role)) {
+                $m_user_role->where('user_id', $id)->where('role_id', 'in', $del_role)->delete();
             }
 
             //找出添加的角色，如果不为空则添加
-            $insert_role=array_diff($params['checked_role'],$params['re_checked_role']);
-            if(!empty($insert_role)){
+            $insert_role = array_diff($params['checked_role'], $params['re_checked_role']);
+            if (!empty($insert_role)) {
                 $user_role_save_data = [];
                 foreach ($insert_role as $val) {
                     $user_role_save_data[] = [
                         'user_id'     => $id,
                         'role_id'     => $val,
-                        'create_time' => Fuc::getNow()
+                        'create_time' => Fuc::getNow(),
                     ];
                 }
                 $m_user_role->insertAll($user_role_save_data);
@@ -266,7 +266,7 @@ class UserController extends Base
 
             Db::commit();
 
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             Db::rollback();
             throw new MsgException($e->getMessage());
         }
@@ -282,7 +282,7 @@ class UserController extends Base
      */
     public function updPwd($id)
     {
-        $params       = request()->put();
+        $params = request()->put();
         $params['id'] = $id;
 
         //验证参数
@@ -291,7 +291,7 @@ class UserController extends Base
         //修改密码
         UserModel::where('id', $id)->update([
             'pwd'         => password_hash($params['pwd'], PASSWORD_DEFAULT),
-            'update_time' => Fuc::getNow()
+            'update_time' => Fuc::getNow(),
         ]);
 
         //返回数据
@@ -310,6 +310,9 @@ class UserController extends Base
 
         //如果头像存在，则删除头像
         $info = UserModel::get($id);
+
+        //不允许删除admin账号
+        if($info['username']=='admin') throw new ValidateException('不能删除admin账号');
         if (!empty($info) && file_exists($info['avatar'])) {
             unlink($info['avatar']);
         }
@@ -332,21 +335,21 @@ class UserController extends Base
             throw new MsgException('头像字段不存在!');
         }
 
-        $relative_path     = 'uploads' . DIRECTORY_SEPARATOR . 'avatar' . DIRECTORY_SEPARATOR;
+        $relative_path = 'uploads' . DIRECTORY_SEPARATOR . 'avatar' . DIRECTORY_SEPARATOR;
         $relative_url_path = '/uploads/avatar/';
-        $absolute_path     = Env::get('root_path') . 'public' . DIRECTORY_SEPARATOR . $relative_path;
-        $url_path          = request()->domain() . '/' . $relative_path;
-        $info              = $file->move($absolute_path);
+        $absolute_path = Env::get('root_path') . 'public' . DIRECTORY_SEPARATOR . $relative_path;
+        $url_path = request()->domain() . '/' . $relative_path;
+        $info = $file->move($absolute_path);
 
         if ($info) {
-            $img_url     = $relative_url_path . str_replace('/', '\\', $info->getSaveName());
-            $save_path   = $relative_path . $info->getSaveName();
+            $img_url = $relative_url_path . str_replace('/', '\\', $info->getSaveName());
+            $save_path = $relative_path . $info->getSaveName();
             $preview_url = $url_path . str_replace('/', '\\', $info->getSaveName());
 
             $this->jsonReturn([
                 'img_url'     => $img_url,
                 'save_path'   => $save_path,
-                'preview_url' => $preview_url
+                'preview_url' => $preview_url,
             ]);
         } else {
             throw new MsgException($file->getError());
@@ -358,12 +361,12 @@ class UserController extends Base
      */
     public function getUserinfo()
     {
-        $user_id  = request()->param('userinfo')['id'];
+        $user_id = request()->param('userinfo')['id'];
         $userinfo = UserModel::get($user_id);
         unset($userinfo['pwd']);
         $userinfo['avatar'] = request()->domain() . $userinfo['avatar'];
         $this->jsonReturn([
-            'userinfo' => $userinfo
+            'userinfo' => $userinfo,
         ]);
     }
 
@@ -381,7 +384,7 @@ class UserController extends Base
 
         //修改密码
         UserModel::where('id', $user_id)->update([
-            'pwd' => password_hash($params['pwd'], PASSWORD_DEFAULT)
+            'pwd' => password_hash($params['pwd'], PASSWORD_DEFAULT),
         ]);
 
         $this->jsonReturn(true);

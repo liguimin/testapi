@@ -37,23 +37,25 @@ class MenuController extends Base
      */
     public function create()
     {
-        $m_menu    = new MenuModel();
+        $m_menu = new MenuModel();
         $node_lsit = $m_menu->getNodeList();
         $tree_node = Fuc::getTree($node_lsit, 0, 'pid', 'id', 'children', function ($val) {
             $curr_val = [];
             if (!empty($val)) {
                 $curr_val = [
                     'title'    => $val['menu_name'],
+                    'label'    => $val['menu_name'],
                     'value'    => $val['id'],
                     'key'      => $val['id'],
-                    'children' => $val['children']
+                    'children' => $val['children'],
                 ];
             }
             return $curr_val;
         });
 
         $this->jsonReturn([
-            'tree_node' => $tree_node
+            'list'      => $node_lsit,
+            'tree_node' => $tree_node,
         ]);
     }
 
@@ -86,7 +88,7 @@ class MenuController extends Base
             'state'       => $params['state'],
             'depath'      => $p_info['depath'] + 1,
             'route'       => $params['is_node'] == $is_node['YES'] ? 0 : $params['route'],
-            'create_time' => Fuc::getNow()
+            'create_time' => Fuc::getNow(),
         ]);
 
         $this->jsonReturn(true);
@@ -114,16 +116,17 @@ class MenuController extends Base
     {
         $this->validateParams(new MenuValidate(), 's_edit', ['id' => $id]);
         //获取树节点
-        $m_menu    = new MenuModel();
+        $m_menu = new MenuModel();
         $node_lsit = $m_menu->getNodeList();
         $tree_node = Fuc::getTree($node_lsit, 0, 'pid', 'id', 'children', function ($val) {
             $curr_val = [];
             if (!empty($val)) {
                 $curr_val = [
                     'title'    => $val['menu_name'],
+                    'label'    => $val['menu_name'],
                     'value'    => $val['id'],
                     'key'      => $val['id'],
-                    'children' => $val['children']
+                    'children' => $val['children'],
                 ];
             }
             return $curr_val;
@@ -134,7 +137,8 @@ class MenuController extends Base
 
         $this->jsonReturn([
             'tree_node' => $tree_node,
-            'data'      => $data
+            'list'      => $node_lsit,
+            'data'      => $data,
         ]);
     }
 
@@ -147,12 +151,12 @@ class MenuController extends Base
      */
     public function update(Request $request, $id)
     {
-        $params       = $request->param();
+        $params = $request->param();
         $params['id'] = $id;
         $this->validateParams(new MenuValidate(), 's_update', $params);
 
-        $is_node   = MenuModel::IS_NODE;
-        $m_menu    = new MenuModel();
+        $is_node = MenuModel::IS_NODE;
+        $m_menu = new MenuModel();
         $curr_data = $m_menu->where('id', $id)->find();
         $edit_data = [
             'pid'         => $params['pid'],
@@ -162,7 +166,7 @@ class MenuController extends Base
             'is_node'     => $params['is_node'],
             'route'       => $params['is_node'] == $is_node['YES'] ? 0 : $params['route'],
             'state'       => $params['state'],
-            'update_time' => Fuc::getNow()
+            'update_time' => Fuc::getNow(),
         ];
 
         Db::startTrans();
@@ -173,12 +177,12 @@ class MenuController extends Base
                 $p_info = $m_menu->where('id', $params['pid'])->find();
                 if (empty($p_info)) throw new ValidateException('上级ID不存在！');
                 $edit_data['depath'] = $p_info['depath'] + 1;
-                $edit_data['path']   = $p_info['path'] . $params['pid'] . '>';
+                $edit_data['path'] = $p_info['path'] . $params['pid'] . '>';
 
                 //将其子菜单全部转移到新的父级ID下
                 $m_menu->where('path', 'like', '%>' . $id . '>%')->update([
                     'path'   => Db::raw("replace(path,'{$curr_data['path']}','{$edit_data['path']}')"),
-                    'depath' => Db::raw("(length(path)-length(replace(path,'>',''))-2)")
+                    'depath' => Db::raw("(length(path)-length(replace(path,'>',''))-2)"),
                 ]);
             }
 
@@ -238,20 +242,20 @@ class MenuController extends Base
         $userinfo = request()->param('userinfo');
         $role_ids = UserRoleModel::where('user_id', $userinfo['id'])->column('role_id');
 
-        $m_menu    = new MenuModel();
+        $m_menu = new MenuModel();
         $menu_list = $m_menu->getMenuByRoleId($role_ids);
 
         //获得所有路由和要展开的菜单Key
-        $is_node         = MenuModel::IS_NODE;
+        $is_node = MenuModel::IS_NODE;
         $menu_route_list = [];
-        $open_keys       = [];
+        $open_keys = [];
         foreach ($menu_list as $key => $val) {
             if ($val['is_node'] == $is_node['YES']) {
                 $open_keys[] = (string)$val['id'];
             } else {
                 $menu_route_list[] = $val['route'];
             }
-            $menu_list[$key]['id']=(string)$val['id'];
+            $menu_list[$key]['id'] = (string)$val['id'];
         }
 
         //获得树形菜单
@@ -261,7 +265,7 @@ class MenuController extends Base
             'menu_list'       => $menu_list,
             'menu_tree'       => $menu_tree,
             'menu_route_list' => $menu_route_list,
-            'open_keys'       => $open_keys
+            'open_keys'       => $open_keys,
         ]);
     }
 

@@ -57,10 +57,22 @@ Route::group('v1', function () {
     //获取用户菜单
     Route::get('menu/userMenu','menu/getUserMenu');
 
+    //考试题目路由
+    Route::resource('examquestions','examquestions');
+    //修改考试题目状态
+    Route::put('examquestions/:id/state','examquestions/updState');
+    //上传单选题文件
+    Route::post('examquestions/uploadSingle','examquestions/uploadSingle');
+    //上传判断题文件
+    Route::post('examquestions/uploadJudge','examquestions/uploadJudge');
+    //上传多选题题文件
+    Route::post('examquestions/uploadMulti','examquestions/uploadMulti');
+
 })
     ->prefix('api/')
     ->pattern(['id' => '\d+'])
-    ->header('Access-Control-Allow-Origin','http://47.107.50.5')
+   /* ->header('Access-Control-Allow-Origin','http://47.107.50.5')*/
+    ->header('Access-Control-Allow-Origin','*')
     ->header('Access-Control-Allow-Credentials', 'true')
     ->allowCrossDomain();;
 

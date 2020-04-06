@@ -34,13 +34,13 @@ class AdminAuth
         SessionController::refreshToken($token, $userinfo);
 
         //检查是否有权限访问该接口
-          $check_result=$this->checkPermission($userinfo['id']);
-          if(!$check_result['has_permission']){
-              return redirect(url('/v1/error',['msg'=>urlencode('对不起你没有权限访问该接口：'.$check_result['method'].'  '.$check_result['route']),'code'=>403]));
-          }
+        $check_result = $this->checkPermission($userinfo['id']);
+        if (!$check_result['has_permission']) {
+            return redirect(url('/v1/error', ['msg' => urlencode('对不起你没有权限访问该接口：' . $check_result['method'] . '  ' . $check_result['route']), 'code' => 403]));
+        }
 
         $request->userinfo = $userinfo;
-        $request->token    = $token;
+        $request->token = $token;
         return $next($request);
     }
 
@@ -55,18 +55,18 @@ class AdminAuth
         $role_ids = UserRoleModel::where('user_id', $user_id)->column('role_id');
 
         $m_permission = new PermissionModel();
-        $types        = ResourceModel::TYPE;
-        $resources    = $m_permission->getResourcesByRoleId($role_ids, [
-            $types['API']
+        $types = ResourceModel::TYPE;
+        $resources = $m_permission->getResourcesByRoleId($role_ids, [
+            $types['API'],
         ]);
 
-        $route  = request()->routeInfo()['rule'];
+        $route = request()->routeInfo()['rule'];
         $method = request()->method();
 
         $has_permission = false;
-        $methods        = ResourceModel::METHOD;
+        $methods = ResourceModel::METHOD;
         foreach ($resources as $key => $val) {
-            $identify = 'v1/'.str_replace(':id', '<id>', $val['identify']);
+            $identify = 'v1/' . str_replace(':id', '<id>', $val['identify']);
             if ($route === $identify && $val['method'] == $methods[$method]) {
                 $has_permission = true;
                 break;
@@ -76,7 +76,7 @@ class AdminAuth
         return [
             'has_permission' => $has_permission,
             'method'         => $method,
-            'route'          => $route
+            'route'          => $route,
         ];
     }
 

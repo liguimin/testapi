@@ -20,9 +20,9 @@ class ResourceController extends Base
      */
     public function index()
     {
-        $page      = input('page');
+        $page = input('page');
         $page_size = input('page_size');
-        $m_source  = new ResourceModel();
+        $m_source = new ResourceModel();
 
         $where = [];
 
@@ -84,21 +84,25 @@ class ResourceController extends Base
         $index = Fuc::getOffset($page, $page_size);
         foreach ($data as $key => $val) {
             $val['index'] = ++$index;
-            $data[$key]   = $val;
+            $val['key'] = $val['id'];
+            $val['label'] = $val['name'];
+            $val['disabled'] = false;
+            $val['method_name'] = Fuc::getValue(ResourceModel::METHOD_NAMES, $val['method']);
+            $data[$key] = $val;
         }
 
         //首次加载且是修改权限，则后台的data需要将已选的资源列表全部返回
-        $h_data        = [];
+        $h_data = [];
         $permission_id = input('permission_id');
         if (!empty($permission_id) && $page == 1) {
             $resource_ids = PermissionResourceModel::where('permission_id', $permission_id)->where('is_del', 0)->column('resource_id');
-            $h_data       = ResourceModel::where('id', 'in', $resource_ids)->select()->toArray();
+            $h_data = ResourceModel::where('id', 'in', $resource_ids)->select()->toArray();
         }
 
         $this->jsonReturn([
             'count'  => $count,
             'data'   => Fuc::arrayUnique(array_merge($data, $h_data), 'id'),
-            'h_data' => $h_data
+            'h_data' => $h_data,
         ]);
     }
 
@@ -124,30 +128,35 @@ class ResourceController extends Base
         $params = $request->param();
         $this->validateParams(new ResourceValidate(), 's_save', $params);
         //如果是API，则必须选择请求方法
-        $params['method'] = Fuc::getValue($params, 'method', 0);
-        if ($params['type'] == ResourceModel::TYPE['API'] && empty($params['method'])) throw new ValidateException('请选择请求方法！');
+        $method = Fuc::getValue($params, 'method', 0);
+        $method = $method ? $method : 0;
+        $types = ResourceModel::TYPE;
+        if ($params['type'] == $types['API'] && empty($method)) throw new ValidateException('请选择请求方法！');
+        if ($params['type'] != $types['API']) {
+            $method = 0;
+        }
 
         $m_resource = new ResourceModel();
         //检查标识是否已存在
-        $is_exist = $m_resource->where('identify', $params['identify'])->where('method', $params['method'])->find();
+        $is_exist = $m_resource->where('identify', $params['identify'])->where('method', $method)->find();
         if (!empty($is_exist)) throw new ValidateException('该标识已存在，请不要重复添加！');
 
         $insert_data = [
             'name'        => $params['name'],
             'type'        => $params['type'],
             'identify'    => $params['identify'],
-            'method'      => $params['method'],
+            'method'      => $method,
             'state'       => $params['state'],
             'is_public'   => $params['is_public'],
-            'create_time' => Fuc::getNow()
+            'create_time' => Fuc::getNow(),
         ];
         //添加资源
         $m_resource->insert($insert_data);
 
-        $insert_data['id']    = intval($m_resource->getLastInsID());
+        $insert_data['id'] = intval($m_resource->getLastInsID());
         $insert_data['index'] = 0;
         $this->jsonReturn([
-            'insert_data' => $insert_data
+            'insert_data' => $insert_data,
         ]);
     }
 
@@ -175,7 +184,7 @@ class ResourceController extends Base
 
         $this->jsonReturn([
             'data' => $data,
-            'test'=>['test'=>'1']
+            'test' => ['test' => '1'],
         ]);
     }
 
@@ -188,7 +197,7 @@ class ResourceController extends Base
      */
     public function update(Request $request, $id)
     {
-        $params       = $request->param();
+        $params = $request->param();
         $params['id'] = $id;
         $this->validateParams(new ResourceValidate(), 's_update', $params);
 
@@ -198,7 +207,7 @@ class ResourceController extends Base
 
         //检查标识是否已存在
         $m_resource = new ResourceModel();
-        $is_exist   = $m_resource->where('identify', $params['identify'])->where('method', $params['method'])->where('id', '<>', $id)->find();
+        $is_exist = $m_resource->where('identify', $params['identify'])->where('method', $params['method'])->where('id', '<>', $id)->find();
         if (!empty($is_exist)) throw new ValidateException('该标识已存在！');
 
         //执行修改
@@ -224,8 +233,8 @@ class ResourceController extends Base
      */
     public function delete($id)
     {
-        $this->validateParams(new ResourceValidate(),'s_del',['id'=>$id]);
-        ResourceModel::where('id',$id)->delete();
+        $this->validateParams(new ResourceValidate(), 's_del', ['id' => $id]);
+        ResourceModel::where('id', $id)->delete();
 
         $this->jsonReturn(true);
     }
@@ -236,21 +245,21 @@ class ResourceController extends Base
      */
     public function updState($id)
     {
-        $params       = request()->param();
+        $params = request()->param();
         $params['id'] = $id;
         $this->validateParams(new ResourceValidate(), 's_updState', $params);
 
         $states = ResourceModel::STATES;
         //修改状态
-        $user  = new ResourceModel();
+        $user = new ResourceModel();
         $state = $params['state'] == $states['ENABLED'] ? $states['DISABLED'] : $states['ENABLED'];
         $user->save([
-            'state' => $state
+            'state' => $state,
         ], ['id' => $id]);
 
         //返回结果
         $this->jsonReturn([
-            'state' => $state
+            'state' => $state,
         ]);
     }
 }
