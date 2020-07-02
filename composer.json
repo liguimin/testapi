@@ -18,7 +18,8 @@
     "require": {
         "php": ">=5.6.0",
         "topthink/framework": "5.1.*",
-        "liguimin/utils": "dev-master"
+        "liguimin/utils": "dev-master",
+        "workerman/http-client": "^0.1.5"
     },
     "autoload": {
         "psr-4": {
